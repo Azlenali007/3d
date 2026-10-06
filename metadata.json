@@ -1,0 +1,7 @@
+{
+  "name": "SMM Panel - 3D Interactive Social Media Marketing Platform",
+  "description": "Production-ready SMM Panel with a premium 3D interactive card-based UI, complete PHP & MariaDB backend, real order fulfillment, wallet, services catalog, and admin suite.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

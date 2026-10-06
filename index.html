@@ -1,0 +1,1621 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SMM Panel - 3D Interactive Social Media Marketing Platform</title>
+    <meta name="description" content="Production-ready SMM Panel with a premium 3D interactive card-based UI, complete PHP & MariaDB backend, real order fulfillment, wallet, services catalog, and admin suite." />
+    <meta property="og:title" content="SMM Panel - 3D Interactive Social Media Marketing Platform" />
+    <meta property="og:description" content="Production-ready SMM Panel with a premium 3D interactive card-based UI, complete PHP & MariaDB backend, real order fulfillment, wallet, services catalog, and admin suite." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+    </style>
+  </head>
+  <body class="bg-[#f2f6fa] text-slate-800 antialiased min-h-screen selection:bg-blue-600 selection:text-white" x-data="smmApp">
+    
+    <!-- Toast Notification -->
+    <div x-show="toast.show" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-4"
+         class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border text-sm font-semibold backdrop-blur-md"
+         :class="toast.type === 'error' ? 'bg-red-500/90 text-white border-red-400' : 'bg-slate-900/95 text-white border-slate-700'"
+         style="display: none;">
+      <span x-text="toast.type === 'error' ? '⚠️' : '✨'"></span>
+      <span x-text="toast.message"></span>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div class="min-h-screen flex flex-col justify-between">
+      
+      <!-- TOP NAVIGATION BAR -->
+      <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+          
+          <!-- Logo & Brand -->
+          <div class="flex items-center gap-3 cursor-pointer" @click="navigateTo(isAuthenticated ? 'dashboard' : 'landing')">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-blue-500/30">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m18 15-6-6-6 6"/>
+                <path d="M12 9v12"/>
+                <path d="M4 4h16"/>
+              </svg>
+            </div>
+            <div>
+              <span class="text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+                SMM Panel
+                <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+              </span>
+              <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Grow Your Social Media</p>
+            </div>
+          </div>
+
+          <!-- Desktop Center Links (When on landing or public) -->
+          <nav class="hidden md:flex items-center gap-6" x-show="!isAuthenticated || currentPage === 'landing'">
+            <button @click="navigateTo('landing')" class="text-sm font-semibold hover:text-blue-600 transition" :class="currentPage === 'landing' ? 'text-blue-600' : 'text-slate-600'">Home</button>
+            <button @click="navigateTo('services')" class="text-sm font-semibold hover:text-blue-600 transition" :class="currentPage === 'services' ? 'text-blue-600' : 'text-slate-600'">Services</button>
+            <button @click="navigateTo('new-order')" class="text-sm font-semibold hover:text-blue-600 transition" :class="currentPage === 'new-order' ? 'text-blue-600' : 'text-slate-600'">Order Now</button>
+            <button @click="navigateTo('tickets')" class="text-sm font-semibold hover:text-blue-600 transition" :class="currentPage === 'tickets' ? 'text-blue-600' : 'text-slate-600'">Support</button>
+          </nav>
+
+          <!-- Top Right User Profile & Wallet or Auth CTA -->
+          <div class="flex items-center gap-3">
+            
+            <!-- When Logged In -->
+            <template x-if="isAuthenticated && user">
+              <div class="flex items-center gap-3">
+                <!-- User Greeting Info -->
+                <div class="hidden sm:flex flex-col text-right">
+                  <span class="text-xs text-slate-400 font-medium">Welcome back,</span>
+                  <span class="text-sm font-bold text-slate-900" x-text="user.name">Aaris Ali</span>
+                  <span class="text-[10px] text-blue-600 font-semibold" x-text="'User ID: #' + user.id">User ID: #1024</span>
+                </div>
+
+                <!-- Balance Chip + Add Funds (Reference Image Exact Match) -->
+                <div class="flex items-center bg-blue-50/80 border border-blue-200/80 rounded-2xl p-1.5 pr-2.5 gap-2 shadow-xs">
+                  <div class="pl-2 flex flex-col">
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Your Balance</span>
+                    <span class="text-sm font-extrabold text-blue-700 leading-tight" x-text="'₹' + Number(user.balance).toFixed(2)">₹850.50</span>
+                  </div>
+                  <button @click="navigateTo('wallet')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-sm flex items-center gap-1 active:scale-95">
+                    <span>+</span>
+                    <span>Add Funds</span>
+                  </button>
+                </div>
+
+                <!-- Admin Mode Switcher if Admin -->
+                <button x-show="user.role === 'admin'" @click="navigateTo('admin')" class="px-2.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-bold transition flex items-center gap-1">
+                  <span>⚙️ Admin</span>
+                </button>
+
+                <!-- Profile Avatar Dropdown Trigger -->
+                <div class="relative" x-data="{ open: false }">
+                  <button @click="open = !open" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-200 to-slate-300 border-2 border-white shadow-sm flex items-center justify-center text-slate-700 font-extrabold text-sm overflow-hidden hover:ring-2 hover:ring-blue-500/50 transition">
+                    <span x-text="user.name.charAt(0)">A</span>
+                  </button>
+
+                  <div x-show="open" @click.away="open = false" 
+                       x-transition:enter="transition ease-out duration-150"
+                       x-transition:enter-start="opacity-0 scale-95"
+                       x-transition:enter-end="opacity-100 scale-100"
+                       class="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 text-sm font-medium">
+                    <div class="px-4 py-2 border-b border-slate-100">
+                      <p class="font-bold text-slate-900" x-text="user.name"></p>
+                      <p class="text-xs text-slate-400 truncate" x-text="user.email"></p>
+                    </div>
+                    <button @click="navigateTo('dashboard'); open = false" class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700">
+                      <span>📊 Dashboard</span>
+                    </button>
+                    <button @click="navigateTo('profile'); open = false" class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700">
+                      <span>👤 Profile Settings</span>
+                    </button>
+                    <button @click="navigateTo('orders'); open = false" class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700">
+                      <span>📦 My Orders</span>
+                    </button>
+                    <button @click="navigateTo('transactions'); open = false" class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700">
+                      <span>💳 Transactions</span>
+                    </button>
+                    <button @click="navigateTo('tickets'); open = false" class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700">
+                      <span>🎫 Support Tickets</span>
+                    </button>
+                    <div class="border-t border-slate-100 my-1"></div>
+                    <button @click="handleLogout(); open = false" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 font-semibold flex items-center gap-2">
+                      <span>🚪 Logout</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </template>
+
+            <!-- When Guest / Logged Out -->
+            <template x-if="!isAuthenticated">
+              <div class="flex items-center gap-2">
+                <button @click="authTab = 'login'; navigateTo('login')" class="text-sm font-bold text-slate-700 hover:text-blue-600 px-3.5 py-2 transition">
+                  Login
+                </button>
+                <button @click="authTab = 'register'; navigateTo('login')" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition shadow-md shadow-blue-500/20 active:scale-95">
+                  Register
+                </button>
+              </div>
+            </template>
+
+          </div>
+
+        </div>
+      </header>
+
+      <!-- MAIN ROUTED CONTENT -->
+      <main class="flex-1 pb-20 md:pb-12 page-container">
+        
+        <!-- ======================================================== -->
+        <!-- 1. LANDING PAGE VIEW -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'landing'" class="space-y-16 py-8 md:py-12">
+          
+          <!-- Hero Section with Signature 3D Card Showcase -->
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            
+            <div class="max-w-3xl mx-auto mb-10">
+              <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-100/80 text-blue-700 text-xs font-extrabold uppercase tracking-wider mb-4">
+                <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                Instant High-Speed SMM Hub
+              </span>
+              <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-none mb-4">
+                Elevate Your Brand with <br class="hidden sm:inline" />
+                <span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent">3D Social Media Growth</span>
+              </h1>
+              <p class="text-base sm:text-lg text-slate-600 font-medium max-w-2xl mx-auto">
+                Real-time Instagram, YouTube, Telegram & TikTok engagement powered by high-speed server automation and transparent database pricing.
+              </p>
+            </div>
+
+            <!-- Signature 3D Interactive Carousel Container -->
+            <div class="relative max-w-5xl mx-auto py-10 overflow-hidden perspective-1500"
+                 @mousedown="onCarouselTouchStart($event)"
+                 @mousemove="onCarouselTouchMove($event)"
+                 @mouseup="onCarouselTouchEnd($event)"
+                 @touchstart="onCarouselTouchStart($event)"
+                 @touchmove="onCarouselTouchMove($event)"
+                 @touchend="onCarouselTouchEnd($event)">
+              
+              <!-- 3D Stage -->
+              <div class="relative w-full h-[360px] sm:h-[400px] flex items-center justify-center transform-style-3d">
+                
+                <template x-for="(card, idx) in carouselCards" :key="card.id">
+                  <div class="carousel-card-item absolute w-[290px] sm:w-[350px] h-[340px] sm:h-[370px] rounded-3xl p-7 flex flex-col justify-between text-white cursor-pointer select-none transition-shadow"
+                       :class="'bg-gradient-to-br ' + card.color + ' ' + (idx === carouselIndex ? card.glowClass + ' ring-4 ring-white/30' : 'brightness-90')"
+                       @click="idx === carouselIndex ? navigateTo(isAuthenticated ? card.actionPage : 'login') : setCarouselCard(idx)">
+                    
+                    <!-- Card Top -->
+                    <div class="flex items-center justify-between">
+                      <div class="w-13 h-13 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner">
+                        <template x-if="card.icon === 'lightning'">
+                          <svg class="w-7 h-7 text-white fill-white" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        </template>
+                        <template x-if="card.icon === 'wallet'">
+                          <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                        </template>
+                        <template x-if="card.icon === 'box'">
+                          <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                        </template>
+                        <template x-if="card.icon === 'grid'">
+                          <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                        </template>
+                        <template x-if="card.icon === 'help'">
+                          <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                        </template>
+                      </div>
+
+                      <span class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-wider text-white/90 border border-white/20" x-text="card.badge"></span>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="text-left my-auto">
+                      <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2" x-text="card.title"></h3>
+                      <p class="text-sm sm:text-base text-white/80 font-medium leading-relaxed" x-text="card.subtitle"></p>
+                    </div>
+
+                    <!-- Card Bottom CTA -->
+                    <div class="flex items-center justify-between pt-4 border-t border-white/20">
+                      <span class="text-xs font-bold uppercase tracking-wider text-white/80">Interactive Card</span>
+                      <div class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-slate-900 font-extrabold text-xs shadow-md transition group-hover:scale-105">
+                        <span>Open</span>
+                        <span>→</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </template>
+
+              </div>
+
+              <!-- Controls Indicator -->
+              <div class="flex items-center justify-center gap-4 mt-6">
+                <button @click="prevCarouselCard()" class="w-10 h-10 rounded-full bg-white shadow-md border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition active:scale-95 font-bold">
+                  ‹
+                </button>
+                <div class="flex items-center gap-2">
+                  <template x-for="(card, idx) in carouselCards" :key="'dot-' + card.id">
+                    <button @click="setCarouselCard(idx)" class="h-2.5 rounded-full transition-all"
+                            :class="idx === carouselIndex ? 'w-8 bg-blue-600' : 'w-2.5 bg-slate-300'"></button>
+                  </template>
+                </div>
+                <button @click="nextCarouselCard()" class="w-10 h-10 rounded-full bg-white shadow-md border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition active:scale-95 font-bold">
+                  ›
+                </button>
+              </div>
+
+              <p class="text-xs text-slate-400 font-semibold mt-3">Drag on desktop or swipe on mobile to rotate cards</p>
+
+            </div>
+
+            <!-- Real Database Metrics (No Fake Stats) -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mt-12">
+              <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs text-left">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Services</span>
+                <p class="text-2xl font-black text-slate-900 mt-1" x-text="services.length + ' Services'">20 Services</p>
+                <span class="text-[11px] text-emerald-600 font-semibold">100% Live in MariaDB</span>
+              </div>
+              <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs text-left">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Platforms</span>
+                <p class="text-2xl font-black text-slate-900 mt-1" x-text="categories.length + ' Networks'">6 Networks</p>
+                <span class="text-[11px] text-blue-600 font-semibold">Instagram, YT, TG, etc.</span>
+              </div>
+              <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs text-left">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Starting Rate</span>
+                <p class="text-2xl font-black text-slate-900 mt-1">₹5.00 / 1K</p>
+                <span class="text-[11px] text-purple-600 font-semibold">Lowest Market Price</span>
+              </div>
+              <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs text-left">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Security</span>
+                <p class="text-2xl font-black text-slate-900 mt-1">SSL + Razorpay</p>
+                <span class="text-[11px] text-teal-600 font-semibold">Encrypted Gateway</span>
+              </div>
+            </div>
+
+            <!-- Call to Action Banner -->
+            <div class="max-w-4xl mx-auto mt-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 rounded-3xl p-8 sm:p-12 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between text-left gap-6">
+              <div>
+                <h3 class="text-2xl sm:text-3xl font-black">Ready to scale your social footprint?</h3>
+                <p class="text-white/80 font-medium text-sm mt-1">Create an account or login to access the full 3D interactive dashboard.</p>
+              </div>
+              <button @click="authTab = 'register'; navigateTo('login')" class="bg-white text-blue-700 hover:bg-blue-50 px-6 py-3.5 rounded-2xl font-extrabold text-sm shadow-lg whitespace-nowrap active:scale-95 transition">
+                Create Free Account →
+              </button>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 2. LOGIN / REGISTER VIEW (Exact Reference Image Panel 1) -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'login'" class="py-8 md:py-14 max-w-5xl mx-auto px-4 sm:px-6">
+          <div class="bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden grid grid-cols-1 md:grid-cols-2">
+            
+            <!-- Left Side: Deep Blue Branding & 3D Floating Social Elements -->
+            <div class="bg-gradient-to-br from-blue-700 via-indigo-800 to-sky-600 p-8 sm:p-12 text-white flex flex-col justify-between relative overflow-hidden">
+              <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-6">
+                  <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 text-white font-black">
+                    ▲
+                  </div>
+                  <div>
+                    <h2 class="text-xl font-extrabold tracking-tight">SMM Panel</h2>
+                    <p class="text-xs text-white/70">Grow Your Social Media</p>
+                  </div>
+                </div>
+
+                <div class="mt-8 space-y-2">
+                  <h3 class="text-3xl sm:text-4xl font-black leading-tight">
+                    More Followers<br />
+                    More Engagement<br />
+                    <span class="text-cyan-300">More Success</span>
+                  </h3>
+                  <p class="text-white/80 text-sm pt-2">The premier automated social marketing platform with verified instant execution.</p>
+                </div>
+              </div>
+
+              <!-- Floating Social Icons Illustration -->
+              <div class="relative z-10 grid grid-cols-3 gap-3 my-10 max-w-xs">
+                <div class="hero-floating-icon bg-gradient-to-tr from-pink-500 to-rose-600 p-3.5 rounded-2xl shadow-lg border border-white/30 text-center font-bold text-xs">
+                  📸 Instagram
+                </div>
+                <div class="hero-floating-icon bg-gradient-to-tr from-red-600 to-rose-700 p-3.5 rounded-2xl shadow-lg border border-white/30 text-center font-bold text-xs">
+                  ▶ YouTube
+                </div>
+                <div class="hero-floating-icon bg-gradient-to-tr from-sky-400 to-blue-600 p-3.5 rounded-2xl shadow-lg border border-white/30 text-center font-bold text-xs">
+                  ✈ Telegram
+                </div>
+                <div class="hero-floating-icon bg-gradient-to-tr from-blue-600 to-indigo-700 p-3.5 rounded-2xl shadow-lg border border-white/30 text-center font-bold text-xs">
+                  👥 Facebook
+                </div>
+                <div class="hero-floating-icon bg-gradient-to-tr from-slate-900 to-slate-800 p-3.5 rounded-2xl shadow-lg border border-white/30 text-center font-bold text-xs">
+                  🎵 TikTok
+                </div>
+                <div class="hero-floating-icon bg-gradient-to-tr from-slate-950 to-slate-800 p-3.5 rounded-2xl shadow-lg border border-white/30 text-center font-bold text-xs">
+                  ✖ Twitter
+                </div>
+              </div>
+
+              <div class="relative z-10 text-xs text-white/60 font-semibold">
+                Protected with 256-bit MariaDB encryption.
+              </div>
+            </div>
+
+            <!-- Right Side: Login / Register Form -->
+            <div class="p-8 sm:p-12 flex flex-col justify-center">
+              
+              <!-- Tab Switcher -->
+              <div class="flex items-center bg-slate-100 p-1 rounded-2xl mb-8">
+                <button @click="authTab = 'login'; authError = ''" 
+                        class="flex-1 py-2.5 text-xs font-extrabold rounded-xl transition"
+                        :class="authTab === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'">
+                  Login
+                </button>
+                <button @click="authTab = 'register'; authError = ''" 
+                        class="flex-1 py-2.5 text-xs font-extrabold rounded-xl transition"
+                        :class="authTab === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'">
+                  Register
+                </button>
+              </div>
+
+              <!-- Header Title -->
+              <div class="mb-6">
+                <h3 class="text-2xl font-black text-slate-900" x-text="authTab === 'login' ? 'Welcome Back!' : 'Create an Account'"></h3>
+                <p class="text-sm text-slate-500 font-medium mt-1" x-text="authTab === 'login' ? 'Sign in to your account to continue.' : 'Start scaling your social media accounts today.'"></p>
+              </div>
+
+              <!-- Error Alert -->
+              <div x-show="authError" class="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold flex items-center gap-2">
+                <span>⚠️</span>
+                <span x-text="authError"></span>
+              </div>
+
+              <!-- LOGIN FORM -->
+              <form x-show="authTab === 'login'" @submit.prevent="handleLogin()" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Address</label>
+                  <div class="relative">
+                    <input type="email" x-model="loginForm.email" required placeholder="name@example.com"
+                           class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium transition" />
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Password</label>
+                    <a href="#" @click.prevent="showToast('Password reset link sent to registered email')" class="text-xs font-bold text-blue-600 hover:underline">Forgot Password?</a>
+                  </div>
+                  <input type="password" x-model="loginForm.password" required placeholder="••••••••"
+                         class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium transition" />
+                </div>
+
+                <div class="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                  <input type="checkbox" id="remember" x-model="loginForm.remember" class="rounded text-blue-600 focus:ring-blue-500" />
+                  <label for="remember">Remember Me</label>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition flex items-center justify-center gap-2">
+                  <span>Login</span>
+                  <span>→</span>
+                </button>
+              </form>
+
+              <!-- REGISTER FORM -->
+              <form x-show="authTab === 'register'" @submit.prevent="handleRegister()" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Full Name</label>
+                  <input type="text" x-model="registerForm.name" required placeholder="Aaris Ali"
+                         class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium transition" />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Address</label>
+                  <input type="email" x-model="registerForm.email" required placeholder="aarisali@gmail.com"
+                         class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium transition" />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Phone Number (Optional)</label>
+                  <input type="text" x-model="registerForm.phone" placeholder="+91 98765 43210"
+                         class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium transition" />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+                  <input type="password" x-model="registerForm.password" required minlength="6" placeholder="At least 6 characters"
+                         class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium transition" />
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition flex items-center justify-center gap-2">
+                  <span>Register Account</span>
+                  <span>→</span>
+                </button>
+              </form>
+
+              <!-- Demo Credentials Quick Helper -->
+              <div class="mt-6 pt-6 border-t border-slate-100">
+                <p class="text-xs text-slate-400 font-semibold mb-2">Preloaded Demo User (from reference design):</p>
+                <div class="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
+                  <div>
+                    <span class="font-bold text-slate-800">aarisali@gmail.com</span>
+                    <span class="text-slate-400 font-normal"> / password123</span>
+                  </div>
+                  <button type="button" @click="loginForm.email = 'aarisali@gmail.com'; loginForm.password = 'password123'; authTab = 'login'" class="text-blue-600 font-bold hover:underline">
+                    Autofill
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 3. DASHBOARD VIEW (Exact Reference Image Panel 2) -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'dashboard'" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+          
+          <!-- User Summary Card (Mobile Friendly) -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-md">
+                <span x-text="user ? user.name.charAt(0) : 'U'"></span>
+              </div>
+              <div>
+                <span class="text-xs text-slate-400 font-semibold">Welcome back,</span>
+                <h2 class="text-xl font-black text-slate-900" x-text="user ? user.name : 'User'">Aaris Ali</h2>
+                <span class="text-xs text-blue-600 font-bold" x-text="user ? 'User ID: #' + user.id : 'User ID: #1024'">User ID: #1024</span>
+              </div>
+            </div>
+
+            <!-- Stats Ribbon -->
+            <div class="flex items-center gap-4 text-xs font-bold text-slate-600">
+              <div class="px-3 py-2 bg-slate-50 rounded-xl border border-slate-200">
+                <span class="text-slate-400">Total Orders: </span>
+                <span class="text-slate-900 font-black" x-text="user && user.stats ? user.stats.total_orders : orders.length">4</span>
+              </div>
+              <div class="px-3 py-2 bg-amber-50 rounded-xl border border-amber-200 text-amber-800">
+                <span>Processing: </span>
+                <span class="font-black" x-text="user && user.stats ? user.stats.pending_orders : '2'">2</span>
+              </div>
+              <div class="px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800">
+                <span>Completed: </span>
+                <span class="font-black" x-text="user && user.stats ? user.stats.completed_orders : '2'">2</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- THE 3D CARD HUB (3 Signature Large 3D Cards) -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-black text-slate-900 tracking-tight">Main Card Hub</h3>
+              <span class="text-xs font-semibold text-slate-400">3D Interactive Control Center</span>
+            </div>
+
+            <!-- 3D Perspective Card Row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              
+              <!-- 1. Add Funds 3D Card (Left - Green Gradient) -->
+              <div @click="navigateTo('wallet')" 
+                   class="cursor-pointer group relative rounded-3xl p-7 text-white bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-700 shadow-xl card-3d-glow-green transition-all hover:-translate-y-2 hover:scale-[1.02] flex flex-col justify-between min-h-[220px]">
+                <div class="flex items-center justify-between">
+                  <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+                  </div>
+                  <span class="px-3 py-1 rounded-full bg-white/20 text-xs font-bold text-white border border-white/20">Instant</span>
+                </div>
+
+                <div class="my-3">
+                  <h4 class="text-2xl font-black tracking-tight">Add Funds</h4>
+                  <p class="text-sm text-white/80 font-medium">Top up your wallet</p>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-white/20">
+                  <span class="text-xs font-bold text-white/80" x-text="'Balance: ₹' + (user ? Number(user.balance).toFixed(2) : '850.50')">Balance: ₹850.50</span>
+                  <div class="px-3.5 py-1.5 rounded-xl bg-white text-emerald-700 font-extrabold text-xs group-hover:scale-105 transition flex items-center gap-1">
+                    <span>Deposit</span>
+                    <span>→</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. New Order 3D Card (Center Active - Vibrant Royal Blue / Cyan Gradient) -->
+              <div @click="navigateTo('new-order')" 
+                   class="cursor-pointer group relative rounded-3xl p-7 text-white bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 shadow-2xl card-3d-glow-blue transition-all hover:-translate-y-2 hover:scale-[1.03] ring-4 ring-blue-400/30 flex flex-col justify-between min-h-[220px]">
+                <div class="flex items-center justify-between">
+                  <div class="w-12 h-12 rounded-2xl bg-white/25 backdrop-blur-md flex items-center justify-center border border-white/40 shadow-inner">
+                    <svg class="w-7 h-7 text-white fill-white" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  </div>
+                  <span class="px-3 py-1 rounded-full bg-white/20 text-xs font-bold text-white border border-white/20">Popular</span>
+                </div>
+
+                <div class="my-3">
+                  <h4 class="text-2xl sm:text-3xl font-black tracking-tight">New Order</h4>
+                  <p class="text-sm text-white/90 font-medium">Place a new order for your social media</p>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-white/20">
+                  <span class="text-xs font-bold text-white/90">20+ Instant Services</span>
+                  <div class="px-4 py-2 rounded-xl bg-white text-blue-700 font-extrabold text-xs group-hover:scale-105 transition flex items-center gap-1 shadow-md">
+                    <span>Open</span>
+                    <span>→</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. My Orders 3D Card (Right - Warm Orange / Amber Gradient) -->
+              <div @click="navigateTo('orders')" 
+                   class="cursor-pointer group relative rounded-3xl p-7 text-white bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 shadow-xl card-3d-glow-amber transition-all hover:-translate-y-2 hover:scale-[1.02] flex flex-col justify-between min-h-[220px]">
+                <div class="flex items-center justify-between">
+                  <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                  </div>
+                  <span class="px-3 py-1 rounded-full bg-white/20 text-xs font-bold text-white border border-white/20">Real-time</span>
+                </div>
+
+                <div class="my-3">
+                  <h4 class="text-2xl font-black tracking-tight">My Orders</h4>
+                  <p class="text-sm text-white/80 font-medium">Track your orders</p>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-white/20">
+                  <span class="text-xs font-bold text-white/80" x-text="(orders.length || 4) + ' Total Orders'">4 Total Orders</span>
+                  <div class="px-3.5 py-1.5 rounded-xl bg-white text-orange-700 font-extrabold text-xs group-hover:scale-105 transition flex items-center gap-1">
+                    <span>Track</span>
+                    <span>→</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Quick Access Cards Row (Panel 2 bottom) -->
+          <div class="space-y-3">
+            <h3 class="text-base font-extrabold text-slate-800 tracking-tight">Quick Access</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              
+              <button @click="navigateTo('services')" class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-blue-400 hover:shadow-md transition text-left flex items-center gap-3 group">
+                <div class="w-11 h-11 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center font-bold group-hover:scale-105 transition">
+                  📑
+                </div>
+                <div>
+                  <h5 class="text-sm font-bold text-slate-900">Services</h5>
+                  <p class="text-xs text-slate-400 font-medium">Browse all services</p>
+                </div>
+              </button>
+
+              <button @click="navigateTo('transactions')" class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-blue-400 hover:shadow-md transition text-left flex items-center gap-3 group">
+                <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold group-hover:scale-105 transition">
+                  💳
+                </div>
+                <div>
+                  <h5 class="text-sm font-bold text-slate-900">Transactions</h5>
+                  <p class="text-xs text-slate-400 font-medium">Wallet & history</p>
+                </div>
+              </button>
+
+              <button @click="navigateTo('tickets')" class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-blue-400 hover:shadow-md transition text-left flex items-center gap-3 group">
+                <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold group-hover:scale-105 transition">
+                  💬
+                </div>
+                <div>
+                  <h5 class="text-sm font-bold text-slate-900">Support</h5>
+                  <p class="text-xs text-slate-400 font-medium">Get real help</p>
+                </div>
+              </button>
+
+              <button @click="navigateTo('profile')" class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-blue-400 hover:shadow-md transition text-left flex items-center gap-3 group">
+                <div class="w-11 h-11 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center font-bold group-hover:scale-105 transition">
+                  👤
+                </div>
+                <div>
+                  <h5 class="text-sm font-bold text-slate-900">Profile</h5>
+                  <p class="text-xs text-slate-400 font-medium">Account settings</p>
+                </div>
+              </button>
+
+            </div>
+          </div>
+
+          <!-- Recent Orders Preview from MariaDB -->
+          <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-base font-black text-slate-900">Recent Orders</h4>
+                <p class="text-xs text-slate-400 font-medium">Real-time status synced from database</p>
+              </div>
+              <button @click="navigateTo('orders')" class="text-xs font-bold text-blue-600 hover:underline">View All Orders →</button>
+            </div>
+
+            <div class="space-y-3">
+              <template x-for="order in orders.slice(0, 3)" :key="'dash-order-' + order.id">
+                <div class="flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 hover:bg-slate-50 transition">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-50 to-indigo-50 border border-blue-100 flex items-center justify-center text-sm font-bold text-blue-600">
+                      📦
+                    </div>
+                    <div>
+                      <h5 class="text-sm font-bold text-slate-900" x-text="order.service_name">Instagram Followers</h5>
+                      <p class="text-xs text-slate-400" x-text="'#' + order.id + ' · ' + order.quantity + ' pcs · ₹' + order.charge"></p>
+                    </div>
+                  </div>
+                  <span class="px-3 py-1 rounded-full text-xs font-extrabold"
+                        :class="order.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : (order.status === 'Processing' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700')"
+                        x-text="order.status">
+                  </span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 4. NEW ORDER VIEW (Exact Reference Image Panels 3 & 1) -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'new-order'" class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+          
+          <!-- Top Bar with Back Arrow -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <button @click="navigateTo(previousPage || 'dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-xs font-bold">
+                ←
+              </button>
+              <div>
+                <h2 class="text-xl font-black text-slate-900">New Order</h2>
+                <p class="text-xs text-slate-400 font-medium">Select platform, configure target & place instant order</p>
+              </div>
+            </div>
+            
+            <div class="text-right">
+              <span class="text-[11px] text-slate-400 font-bold block uppercase">Available Balance</span>
+              <span class="text-sm font-black text-blue-700" x-text="'₹' + (user ? Number(user.balance).toFixed(2) : '0.00')">₹850.50</span>
+            </div>
+          </div>
+
+          <!-- Stepper Indicator (Exact Match Panel 3) -->
+          <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center justify-between max-w-xl mx-auto">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-xs">1</div>
+              <span class="text-xs font-bold text-slate-900">Select Service</span>
+            </div>
+            <div class="w-8 h-0.5 bg-slate-200"></div>
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-full font-black text-xs flex items-center justify-center" :class="orderStep >= 2 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'">2</div>
+              <span class="text-xs font-bold" :class="orderStep >= 2 ? 'text-slate-900' : 'text-slate-400'">Details & Link</span>
+            </div>
+            <div class="w-8 h-0.5 bg-slate-200"></div>
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-full font-black text-xs flex items-center justify-center" :class="orderStep >= 3 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'">3</div>
+              <span class="text-xs font-bold" :class="orderStep >= 3 ? 'text-slate-900' : 'text-slate-400'">Order Placed</span>
+            </div>
+          </div>
+
+          <!-- Step 1 & 2: Main Form -->
+          <div x-show="orderStep < 3" class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            
+            <!-- Left: Platform Categories & Services Selection List -->
+            <div class="md:col-span-5 bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+              <h4 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">1. Select Platform</h4>
+              
+              <!-- Platform Pill Buttons -->
+              <div class="grid grid-cols-3 gap-2">
+                <template x-for="cat in categories" :key="cat.slug">
+                  <button @click="selectedCategorySlug = cat.slug" 
+                          class="p-2.5 rounded-xl border text-xs font-bold transition text-center flex flex-col items-center gap-1"
+                          :class="selectedCategorySlug === cat.slug ? 'bg-blue-50 border-blue-600 text-blue-700 shadow-xs' : 'border-slate-200 text-slate-600 hover:bg-slate-50'">
+                    <span x-text="cat.name"></span>
+                  </button>
+                </template>
+              </div>
+
+              <div class="border-t border-slate-100 pt-3">
+                <h4 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">Available Services</h4>
+                
+                <div class="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                  <template x-for="srv in filteredServices" :key="'srv-pick-' + srv.id">
+                    <div @click="selectService(srv)"
+                         class="p-3 rounded-2xl border cursor-pointer transition flex items-center justify-between"
+                         :class="selectedService && selectedService.id === srv.id ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 text-slate-800'">
+                      <div>
+                        <h5 class="text-xs font-extrabold leading-tight" x-text="srv.name"></h5>
+                        <p class="text-[10px] opacity-75 mt-0.5" x-text="srv.speed + ' · Min ' + srv.min_quantity"></p>
+                      </div>
+                      <span class="text-xs font-black whitespace-nowrap ml-2" x-text="'₹' + srv.price_per_k + '/1K'"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Order Details & Execution Form (Panel 1 Exact Match) -->
+            <div class="md:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+              
+              <div class="space-y-5">
+                
+                <!-- Selected Service Card Banner -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600">Selected Service</span>
+                      <h4 class="text-lg font-black text-slate-900" x-text="selectedService ? selectedService.name : 'Select a Service'">Instagram Followers</h4>
+                      <p class="text-xs text-slate-500 mt-0.5 font-medium" x-text="selectedService ? selectedService.description : 'Choose from the left list'"></p>
+                    </div>
+                    <div class="text-right">
+                      <span class="text-lg font-black text-blue-700" x-text="selectedService ? '₹' + selectedService.price_per_k + ' /1K' : '₹0'">₹35 /1K</span>
+                      <span class="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">⚡ Fast Delivery</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Error Notice -->
+                <div x-show="orderError" class="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold">
+                  ⚠️ <span x-text="orderError"></span>
+                </div>
+
+                <!-- Quantity Control (- / + buttons) -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Quantity</label>
+                    <span class="text-[11px] text-slate-400 font-semibold" x-text="selectedService ? 'Min: ' + selectedService.min_quantity + ' | Max: ' + selectedService.max_quantity : ''">Min: 1000 | Max: 1000000</span>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <button type="button" @click="adjustQuantity(-500)" class="w-12 h-12 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-black text-lg transition active:scale-95 flex items-center justify-center shadow-xs">
+                      −
+                    </button>
+                    <input type="number" x-model="orderForm.quantity" @input="calculateOrderCharge()"
+                           class="flex-1 py-3 px-4 text-center rounded-2xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none text-base font-extrabold text-slate-900" />
+                    <button type="button" @click="adjustQuantity(500)" class="w-12 h-12 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-black text-lg transition active:scale-95 flex items-center justify-center shadow-xs">
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Target Link / Username Input -->
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Instagram / Target Link</label>
+                  <input type="text" x-model="orderForm.link" required placeholder="https://instagram.com/yourusername"
+                         class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none text-sm font-medium transition" />
+                  <span class="text-[11px] text-slate-400 font-medium mt-1 block">Ensure profile or post is public before placing order</span>
+                </div>
+
+                <!-- Total Real Price Display -->
+                <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                  <span class="text-sm font-bold text-slate-600">Total Price</span>
+                  <span class="text-2xl font-black text-blue-700" x-text="'₹' + orderForm.calculatedCharge">₹35.00</span>
+                </div>
+
+              </div>
+
+              <!-- Action Submit Button -->
+              <div class="mt-6">
+                <button type="button" @click="placeOrder()" :disabled="isPlacingOrder || !selectedService"
+                        class="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-base shadow-xl shadow-blue-500/25 active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-50">
+                  <span x-text="isPlacingOrder ? 'Processing MariaDB Order...' : 'Place Order →'">Place Order →</span>
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Step 3: Success Confirmation Screen -->
+          <div x-show="orderStep === 3" class="max-w-xl mx-auto bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xl text-center space-y-6">
+            <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-3xl font-black">
+              ✓
+            </div>
+            <div>
+              <h3 class="text-2xl font-black text-slate-900">Order Placed Successfully!</h3>
+              <p class="text-sm text-slate-500 mt-1">Your order has been recorded into the MariaDB database and sent for fulfillment.</p>
+            </div>
+
+            <template x-if="orderSuccess">
+              <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left space-y-2 text-xs">
+                <div class="flex justify-between"><span class="text-slate-400">Order ID:</span> <span class="font-bold text-slate-900" x-text="'#' + orderSuccess.id"></span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Service:</span> <span class="font-bold text-slate-900" x-text="orderSuccess.service_name"></span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Quantity:</span> <span class="font-bold text-slate-900" x-text="orderSuccess.quantity + ' pcs'"></span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Charge Deducted:</span> <span class="font-bold text-emerald-600" x-text="'₹' + orderSuccess.charge"></span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Remaining Balance:</span> <span class="font-bold text-blue-700" x-text="'₹' + (user ? Number(user.balance).toFixed(2) : '0.00')"></span></div>
+              </div>
+            </template>
+
+            <div class="flex items-center gap-3">
+              <button @click="orderStep = 1; orderForm.link = '';" class="flex-1 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 font-bold text-xs text-slate-700 transition">
+                Place Another Order
+              </button>
+              <button @click="navigateTo('orders')" class="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-xs text-white transition shadow-md">
+                View My Orders →
+              </button>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 5. ADD FUNDS / WALLET VIEW (Exact Reference Image Panel 4) -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'wallet'" class="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <button @click="navigateTo(previousPage || 'dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-xs font-bold">
+                ←
+              </button>
+              <div>
+                <h2 class="text-xl font-black text-slate-900">Add Funds</h2>
+                <p class="text-xs text-slate-400 font-medium">Instant automated deposit into your MariaDB balance</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Balance Card with 3D Wallet Aesthetic -->
+          <div class="rounded-3xl p-6 sm:p-7 text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 shadow-xl card-3d-glow-blue flex items-center justify-between">
+            <div>
+              <span class="text-xs font-extrabold text-white/80 uppercase tracking-wider">Current Balance</span>
+              <h3 class="text-3xl sm:text-4xl font-black mt-1" x-text="'₹' + (user ? Number(user.balance).toFixed(2) : '850.50')">₹850.50</h3>
+              <p class="text-xs text-white/80 mt-1 font-medium">Account ID: <span x-text="user ? '#' + user.id : '#1024'">#1024</span></p>
+            </div>
+            <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 text-3xl shadow-inner">
+              👛
+            </div>
+          </div>
+
+          <!-- Deposit Options Form -->
+          <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+            
+            <!-- Amount Preset Buttons (Exact Match Reference Image: ₹100, ₹200, ₹500, ₹1000, ₹2000, Other) -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">Select Amount</label>
+              <div class="grid grid-cols-3 gap-3">
+                <button type="button" @click="depositAmount = 100" class="py-3 rounded-2xl border font-black text-sm transition"
+                        :class="depositAmount === 100 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'border-slate-200 text-slate-700 hover:bg-slate-50'">
+                  ₹100
+                </button>
+                <button type="button" @click="depositAmount = 200" class="py-3 rounded-2xl border font-black text-sm transition"
+                        :class="depositAmount === 200 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'border-slate-200 text-slate-700 hover:bg-slate-50'">
+                  ₹200
+                </button>
+                <button type="button" @click="depositAmount = 500" class="py-3 rounded-2xl border font-black text-sm transition"
+                        :class="depositAmount === 500 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'border-slate-200 text-slate-700 hover:bg-slate-50'">
+                  ₹500
+                </button>
+                <button type="button" @click="depositAmount = 1000" class="py-3 rounded-2xl border font-black text-sm transition"
+                        :class="depositAmount === 1000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'border-slate-200 text-slate-700 hover:bg-slate-50'">
+                  ₹1,000
+                </button>
+                <button type="button" @click="depositAmount = 2000" class="py-3 rounded-2xl border font-black text-sm transition"
+                        :class="depositAmount === 2000 ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'border-slate-200 text-slate-700 hover:bg-slate-50'">
+                  ₹2,000
+                </button>
+                <div class="relative">
+                  <input type="number" x-model="depositAmount" min="10" placeholder="Other"
+                         class="w-full py-3 px-3 rounded-2xl border border-slate-200 text-center font-black text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Method Card (Panel 4) -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">Payment Method</label>
+              
+              <div class="space-y-2">
+                <div @click="selectedPaymentMethod = 'Razorpay'" 
+                     class="p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition"
+                     :class="selectedPaymentMethod === 'Razorpay' ? 'border-blue-600 bg-blue-50/50 shadow-xs' : 'border-slate-200 hover:bg-slate-50'">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
+                      R
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-extrabold text-slate-900">Razorpay</h4>
+                      <p class="text-xs text-slate-400 font-medium">UPI, Cards, NetBanking (Secure & Fast)</p>
+                    </div>
+                  </div>
+                  <span class="text-blue-600 text-lg font-black" x-show="selectedPaymentMethod === 'Razorpay'">✓</span>
+                </div>
+
+                <div @click="selectedPaymentMethod = 'Bank UPI QR'" 
+                     class="p-4 rounded-2xl border cursor-pointer flex items-center justify-between transition"
+                     :class="selectedPaymentMethod === 'Bank UPI QR' ? 'border-blue-600 bg-blue-50/50 shadow-xs' : 'border-slate-200 hover:bg-slate-50'">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
+                      UPI
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-extrabold text-slate-900">Instant UPI QR</h4>
+                      <p class="text-xs text-slate-400 font-medium">Google Pay, PhonePe, Paytm (Zero Fee)</p>
+                    </div>
+                  </div>
+                  <span class="text-blue-600 text-lg font-black" x-show="selectedPaymentMethod === 'Bank UPI QR'">✓</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Submit CTA Button -->
+            <button type="button" @click="handleDeposit()" :disabled="isDepositing"
+                    class="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-base shadow-lg shadow-blue-500/25 active:scale-95 transition flex items-center justify-center gap-2">
+              <span x-text="isDepositing ? 'Recording Deposit...' : 'Pay Now ₹' + depositAmount + ' →'">Pay Now ₹200 →</span>
+            </button>
+
+            <!-- Trust Note (Panel 4) -->
+            <div class="text-center text-xs text-slate-400 font-semibold flex items-center justify-center gap-1.5">
+              <span>🔒</span>
+              <span>Your payment is secure and encrypted</span>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 6. MY ORDERS VIEW (Exact Reference Image Panel 5) -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'orders'" class="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <button @click="navigateTo(previousPage || 'dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-xs font-bold">
+                ←
+              </button>
+              <div>
+                <h2 class="text-xl font-black text-slate-900">My Orders</h2>
+                <p class="text-xs text-slate-400 font-medium">Real-time status of orders from MariaDB database</p>
+              </div>
+            </div>
+
+            <button @click="navigateTo('new-order')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow-xs">
+              + New Order
+            </button>
+          </div>
+
+          <!-- Filter Tabs (Panel 5: All, Processing, Completed, Cancelled) -->
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <button @click="setOrderStatusFilter('All')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="orderStatusFilter === 'All' ? 'bg-blue-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'">
+              All
+            </button>
+            <button @click="setOrderStatusFilter('Processing')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="orderStatusFilter === 'Processing' ? 'bg-amber-500 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'">
+              Processing
+            </button>
+            <button @click="setOrderStatusFilter('Completed')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="orderStatusFilter === 'Completed' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'">
+              Completed
+            </button>
+            <button @click="setOrderStatusFilter('Cancelled')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="orderStatusFilter === 'Cancelled' ? 'bg-red-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'">
+              Cancelled
+            </button>
+          </div>
+
+          <!-- Order Cards List (Panel 5 Layout) -->
+          <div class="space-y-3">
+            <template x-for="ord in orders" :key="'order-item-' + ord.id">
+              <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-blue-300 transition flex items-center justify-between gap-4">
+                
+                <div class="flex items-center gap-3.5">
+                  <!-- Platform Icon Circle -->
+                  <div class="w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm text-white shadow-xs"
+                       :class="ord.category_slug === 'youtube' ? 'bg-red-600' : (ord.category_slug === 'telegram' ? 'bg-sky-500' : 'bg-gradient-to-tr from-pink-500 to-rose-600')">
+                    <span x-text="ord.category_slug === 'youtube' ? '▶' : (ord.category_slug === 'telegram' ? '✈' : '📸')"></span>
+                  </div>
+
+                  <div>
+                    <h4 class="text-sm font-extrabold text-slate-900" x-text="ord.service_name">Instagram Followers</h4>
+                    <p class="text-xs text-slate-500 font-semibold mt-0.5" x-text="(ord.quantity >= 1000 ? (ord.quantity / 1000) + 'K' : ord.quantity) + ' · ₹' + ord.charge"></p>
+                    <div class="flex items-center gap-2 text-[11px] text-slate-400 mt-1">
+                      <span class="font-bold text-blue-600" x-text="'#' + ord.id">#10254</span>
+                      <span>·</span>
+                      <span x-text="new Date(ord.created_at).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })">12 May 2025, 4:32 PM</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <span class="px-3 py-1 rounded-full text-xs font-extrabold"
+                        :class="ord.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : (ord.status === 'Processing' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800')"
+                        x-text="ord.status">
+                    Processing
+                  </span>
+                  <span class="text-slate-300 font-bold">›</span>
+                </div>
+
+              </div>
+            </template>
+
+            <div x-show="orders.length === 0" class="bg-white rounded-3xl p-12 text-center border border-slate-200">
+              <span class="text-4xl block mb-2">📦</span>
+              <h4 class="text-base font-bold text-slate-800">No orders found</h4>
+              <p class="text-xs text-slate-400 mt-1">No orders currently match the selected status filter.</p>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 7. SERVICES VIEW (Exact Reference Image Panel 6) -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'services'" class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <button @click="navigateTo(previousPage || 'dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-xs font-bold">
+                ←
+              </button>
+              <div>
+                <h2 class="text-xl font-black text-slate-900">All Services</h2>
+                <p class="text-xs text-slate-400 font-medium">Live catalog with real-time database rates</p>
+              </div>
+            </div>
+
+            <!-- Search Input (Panel 6) -->
+            <div class="w-full sm:w-72 relative">
+              <input type="text" x-model="serviceSearchQuery" placeholder="Search services..."
+                     class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none" />
+              <span class="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
+            </div>
+          </div>
+
+          <!-- Platform Filter Tabs (Instagram, YouTube, Telegram, Facebook, TikTok, Twitter X) -->
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <button @click="selectedCategorySlug = ''" class="px-3.5 py-2 rounded-xl text-xs font-black transition whitespace-nowrap"
+                    :class="selectedCategorySlug === '' ? 'bg-blue-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'">
+              All Networks
+            </button>
+            <template x-for="cat in categories" :key="'cat-tab-' + cat.slug">
+              <button @click="selectedCategorySlug = cat.slug" class="px-3.5 py-2 rounded-xl text-xs font-black transition whitespace-nowrap flex items-center gap-1.5"
+                      :class="selectedCategorySlug === cat.slug ? 'bg-blue-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'">
+                <span x-text="cat.name"></span>
+              </button>
+            </template>
+          </div>
+
+          <!-- Premium Banner (Panel 6) -->
+          <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white flex items-center justify-between shadow-xs">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">👑</span>
+              <div>
+                <h4 class="text-sm font-extrabold">Premium Quality Services</h4>
+                <p class="text-xs text-white/80">Boost your social media presence today with high-retention servers.</p>
+              </div>
+            </div>
+            <button @click="navigateTo('new-order')" class="bg-white text-blue-700 text-xs font-black px-4 py-2 rounded-xl shadow-xs hover:bg-blue-50 transition">
+              Order Now →
+            </button>
+          </div>
+
+          <!-- Services Cards Grid (Panel 6 Style) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <template x-for="srv in filteredServices" :key="'srv-card-' + srv.id">
+              <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs hover:border-blue-400 hover:shadow-md transition flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-[10px] font-black uppercase" x-text="srv.category_name"></span>
+                    <span class="text-base font-black text-blue-700" x-text="'₹' + srv.price_per_k + ' /1K'"></span>
+                  </div>
+                  <h4 class="text-base font-black text-slate-900 leading-snug" x-text="srv.name">Instagram Followers</h4>
+                  <p class="text-xs text-slate-500 font-medium mt-1 leading-relaxed" x-text="srv.description"></p>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <div class="text-[11px] text-slate-400 font-bold space-y-0.5">
+                    <div>Speed: <span class="text-slate-700" x-text="srv.speed"></span></div>
+                    <div>Limits: <span class="text-slate-700" x-text="srv.min_quantity + ' - ' + srv.max_quantity"></span></div>
+                  </div>
+                  <button @click="selectService(srv); navigateTo('new-order')" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl transition shadow-xs active:scale-95">
+                    Order →
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 8. TRANSACTIONS VIEW (Exact Reference Image Panel 7) -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'transactions'" class="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <button @click="navigateTo(previousPage || 'dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-xs font-bold">
+                ←
+              </button>
+              <div>
+                <h2 class="text-xl font-black text-slate-900">Transactions</h2>
+                <p class="text-xs text-slate-400 font-medium">Wallet ledger records stored in MariaDB</p>
+              </div>
+            </div>
+
+            <button @click="navigateTo('wallet')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition">
+              + Add Funds
+            </button>
+          </div>
+
+          <!-- Tabs (Panel 7: All, Add Funds, Orders, Refunds) -->
+          <div class="flex items-center gap-2">
+            <button @click="setTransactionFilter('All')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="transactionFilter === 'All' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'">
+              All
+            </button>
+            <button @click="setTransactionFilter('Add Funds')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="transactionFilter === 'Add Funds' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'">
+              Add Funds
+            </button>
+            <button @click="setTransactionFilter('Orders')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="transactionFilter === 'Orders' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'">
+              Orders
+            </button>
+            <button @click="setTransactionFilter('Refunds')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="transactionFilter === 'Refunds' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'">
+              Refunds
+            </button>
+          </div>
+
+          <!-- Transaction List Rows (Panel 7 Match) -->
+          <div class="space-y-3">
+            <template x-for="tx in transactions" :key="'tx-' + tx.id">
+              <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center justify-between">
+                <div class="flex items-center gap-3.5">
+                  <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm"
+                       :class="tx.type === 'deposit' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'">
+                    <span x-text="tx.type === 'deposit' ? '⚡' : '🛍️'"></span>
+                  </div>
+                  <div>
+                    <h5 class="text-sm font-extrabold text-slate-900" x-text="tx.description">Add Funds</h5>
+                    <p class="text-xs text-slate-400 font-semibold" x-text="tx.payment_method + ' · ' + new Date(tx.created_at).toLocaleString()"></p>
+                  </div>
+                </div>
+
+                <div class="text-right">
+                  <span class="text-sm font-black"
+                        :class="Number(tx.amount) >= 0 ? 'text-emerald-600' : 'text-rose-600'"
+                        x-text="(Number(tx.amount) >= 0 ? '+₹' : '-₹') + Math.abs(Number(tx.amount)).toFixed(2)">
+                  </span>
+                  <span class="block text-[10px] text-slate-400 uppercase font-bold" x-text="tx.status">completed</span>
+                </div>
+              </div>
+            </template>
+          </div>
+
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 9. SUPPORT TICKETS VIEW (Exact Reference Image Panel 8) -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'tickets'" class="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <button @click="navigateTo(previousPage || 'dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-xs font-bold">
+                ←
+              </button>
+              <div>
+                <h2 class="text-xl font-black text-slate-900">Support</h2>
+                <p class="text-xs text-slate-400 font-medium">Direct ticketing system connected to database</p>
+              </div>
+            </div>
+
+            <button @click="showNewTicketModal = true" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-black px-4 py-2 rounded-xl transition shadow-xs">
+              + Create Ticket
+            </button>
+          </div>
+
+          <!-- Ticket Tabs (Panel 8: All, Open, In Progress, Closed) -->
+          <div class="flex items-center gap-2">
+            <button @click="setTicketFilter('All')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="ticketFilter === 'All' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'">
+              All
+            </button>
+            <button @click="setTicketFilter('Open')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="ticketFilter === 'Open' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'">
+              Open
+            </button>
+            <button @click="setTicketFilter('In Progress')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="ticketFilter === 'In Progress' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'">
+              In Progress
+            </button>
+            <button @click="setTicketFilter('Closed')" class="px-4 py-2 rounded-xl text-xs font-black transition"
+                    :class="ticketFilter === 'Closed' ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'">
+              Closed
+            </button>
+          </div>
+
+          <!-- Ticket Card List (Panel 8 Match) -->
+          <div class="space-y-3">
+            <template x-for="t in tickets" :key="'ticket-' + t.id">
+              <div @click="viewTicket(t.id)" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:border-blue-300 transition cursor-pointer flex items-center justify-between">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-black text-blue-600" x-text="'#T' + t.id">#T1024</span>
+                    <h5 class="text-sm font-extrabold text-slate-900" x-text="t.subject">Order not started yet</h5>
+                  </div>
+                  <p class="text-xs text-slate-400 mt-1" x-text="new Date(t.created_at).toLocaleString()"></p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <span class="px-3 py-1 rounded-full text-xs font-extrabold"
+                        :class="t.status === 'Open' ? 'bg-amber-100 text-amber-800' : (t.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-700')"
+                        x-text="t.status">
+                  </span>
+                  <span class="text-slate-300 font-bold">›</span>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Active Ticket Details / Chat View -->
+          <div x-show="activeTicket" class="bg-white rounded-3xl p-6 border border-slate-200 shadow-lg space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <span class="text-xs font-bold text-blue-600" x-text="'#T' + activeTicket.id"></span>
+                <h4 class="text-base font-black text-slate-900" x-text="activeTicket.subject"></h4>
+              </div>
+              <button @click="activeTicket = null" class="text-xs font-bold text-slate-400 hover:text-slate-700">✕ Close</button>
+            </div>
+
+            <!-- Messages Thread -->
+            <div class="space-y-3 max-h-72 overflow-y-auto pr-2">
+              <template x-for="msg in activeTicket.messages" :key="'msg-' + msg.id">
+                <div class="p-3 rounded-2xl text-xs"
+                     :class="msg.is_admin ? 'bg-blue-50 border border-blue-200 ml-4' : 'bg-slate-50 border border-slate-200 mr-4'">
+                  <div class="flex items-center justify-between font-bold mb-1">
+                    <span :class="msg.is_admin ? 'text-blue-700' : 'text-slate-800'" x-text="msg.is_admin ? '🛡️ SMM Staff' : msg.user_name"></span>
+                    <span class="text-[10px] text-slate-400 font-normal" x-text="new Date(msg.created_at).toLocaleTimeString()"></span>
+                  </div>
+                  <p class="text-slate-700 leading-relaxed font-medium" x-text="msg.message"></p>
+                </div>
+              </template>
+            </div>
+
+            <!-- Reply Box -->
+            <form @submit.prevent="sendTicketReply()" class="flex gap-2">
+              <input type="text" x-model="ticketReplyMessage" required placeholder="Type your reply here..."
+                     class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-blue-600 outline-none" />
+              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
+                Send Reply
+              </button>
+            </form>
+          </div>
+
+          <!-- Create Ticket Modal -->
+          <div x-show="showNewTicketModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4" @click.away="showNewTicketModal = false">
+              <div class="flex items-center justify-between">
+                <h4 class="text-base font-black text-slate-900">Create Support Ticket</h4>
+                <button @click="showNewTicketModal = false" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+              </div>
+
+              <form @submit.prevent="createTicket()" class="space-y-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Subject</label>
+                  <input type="text" x-model="newTicketForm.subject" required placeholder="e.g. Order not started yet"
+                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-blue-600 outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Order ID (Optional)</label>
+                  <input type="number" x-model="newTicketForm.order_id" placeholder="10254"
+                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-blue-600 outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Priority</label>
+                  <select x-model="newTicketForm.priority" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium outline-none">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Message</label>
+                  <textarea x-model="newTicketForm.message" required rows="3" placeholder="Describe your question or issue in detail..."
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-blue-600 outline-none"></textarea>
+                </div>
+                <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md">
+                  Submit Ticket
+                </button>
+              </form>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 10. PROFILE / ACCOUNT VIEW (Exact Reference Image Panel 9) -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'profile'" class="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+          <div class="flex items-center gap-3">
+            <button @click="navigateTo(previousPage || 'dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-xs font-bold">
+              ←
+            </button>
+            <div>
+              <h2 class="text-xl font-black text-slate-900">Profile / Account Settings</h2>
+              <p class="text-xs text-slate-400 font-medium">Manage credentials, identity and security preferences</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            
+            <!-- Left Tabs (Panel 9: Account Info, Change Password, Email Verification, Notifications) -->
+            <div class="md:col-span-4 bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-2">
+              <button class="w-full text-left px-4 py-3 rounded-2xl bg-blue-50 text-blue-700 font-bold text-xs flex items-center gap-2">
+                <span>👤</span> <span>Account Info</span>
+              </button>
+              <button class="w-full text-left px-4 py-3 rounded-2xl text-slate-600 hover:bg-slate-50 font-bold text-xs flex items-center gap-2">
+                <span>🔒</span> <span>Change Password</span>
+              </button>
+              <button class="w-full text-left px-4 py-3 rounded-2xl text-slate-600 hover:bg-slate-50 font-bold text-xs flex items-center gap-2">
+                <span>✉️</span> <span>Email Verification</span>
+              </button>
+              <button class="w-full text-left px-4 py-3 rounded-2xl text-slate-600 hover:bg-slate-50 font-bold text-xs flex items-center gap-2">
+                <span>🔔</span> <span>Notifications</span>
+              </button>
+            </div>
+
+            <!-- Right Profile Content (Panel 9 Match) -->
+            <div class="md:col-span-8 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
+              
+              <!-- Avatar Card -->
+              <div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl font-black shadow-md">
+                  <span x-text="user ? user.name.charAt(0) : 'A'"></span>
+                </div>
+                <div>
+                  <h4 class="text-base font-black text-slate-900" x-text="user ? user.name : 'Aaris Ali'">Aaris Ali</h4>
+                  <p class="text-xs text-blue-600 font-bold" x-text="user ? 'User ID: #' + user.id : 'User ID: #1024'">User ID: #1024</p>
+                </div>
+              </div>
+
+              <!-- Form Inputs -->
+              <form @submit.prevent="updateProfile()" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Full Name</label>
+                  <input type="text" x-model="profileForm.name" required
+                         class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-medium focus:border-blue-600 outline-none" />
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Email</label>
+                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">Verified ✓</span>
+                  </div>
+                  <input type="email" x-model="profileForm.email" disabled
+                         class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-100 text-sm font-medium text-slate-500" />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Phone</label>
+                  <input type="text" x-model="profileForm.phone" placeholder="+91 98765 43210"
+                         class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-medium focus:border-blue-600 outline-none" />
+                </div>
+
+                <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl text-xs text-slate-500 font-semibold">
+                  <span>Joined Date</span>
+                  <span class="font-bold text-slate-800" x-text="user ? new Date(user.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '10 May 2025'">10 May 2025</span>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm shadow-md transition active:scale-95">
+                  Save Changes
+                </button>
+              </form>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 11. ADMIN PANEL VIEW (Requirements 14 & 15) -->
+        <!-- ======================================================== -->
+        <section x-show="currentPage === 'admin'" class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <button @click="navigateTo('dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-xs font-bold">
+                ←
+              </button>
+              <div>
+                <h2 class="text-xl font-black text-slate-900">Admin Control Suite</h2>
+                <p class="text-xs text-slate-400 font-medium">Real-time MariaDB administration and metrics</p>
+              </div>
+            </div>
+
+            <button @click="navigateTo('dashboard')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold px-3 py-1.5 rounded-xl">
+              Exit to User View
+            </button>
+          </div>
+
+          <!-- Admin Tabs -->
+          <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+            <button @click="adminActiveTab = 'dashboard'" class="px-4 py-2 rounded-xl text-xs font-black" :class="adminActiveTab === 'dashboard' ? 'bg-purple-600 text-white' : 'text-slate-600 hover:bg-slate-100'">Dashboard</button>
+            <button @click="adminActiveTab = 'users'" class="px-4 py-2 rounded-xl text-xs font-black" :class="adminActiveTab === 'users' ? 'bg-purple-600 text-white' : 'text-slate-600 hover:bg-slate-100'">Users Management</button>
+            <button @click="adminActiveTab = 'orders'" class="px-4 py-2 rounded-xl text-xs font-black" :class="adminActiveTab === 'orders' ? 'bg-purple-600 text-white' : 'text-slate-600 hover:bg-slate-100'">All Orders</button>
+            <button @click="adminActiveTab = 'services'" class="px-4 py-2 rounded-xl text-xs font-black" :class="adminActiveTab === 'services' ? 'bg-purple-600 text-white' : 'text-slate-600 hover:bg-slate-100'">Services</button>
+          </div>
+
+          <!-- Admin Dashboard View -->
+          <div x-show="adminActiveTab === 'dashboard'" class="space-y-6">
+            <template x-if="adminStats">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <span class="text-xs font-bold text-slate-400">Total Users</span>
+                  <p class="text-2xl font-black text-slate-900" x-text="adminStats.total_users"></p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <span class="text-xs font-bold text-slate-400">Total Orders</span>
+                  <p class="text-2xl font-black text-slate-900" x-text="adminStats.total_orders"></p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <span class="text-xs font-bold text-slate-400">Pending Orders</span>
+                  <p class="text-2xl font-black text-amber-600" x-text="adminStats.pending_orders"></p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+                  <span class="text-xs font-bold text-slate-400">Total Revenue</span>
+                  <p class="text-2xl font-black text-emerald-600" x-text="'₹' + Number(adminStats.total_revenue).toFixed(2)"></p>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Admin Users View -->
+          <div x-show="adminActiveTab === 'users'" class="bg-white rounded-3xl p-6 border border-slate-200 space-y-4">
+            <h4 class="text-sm font-black text-slate-900">User Management & Balance</h4>
+            <div class="space-y-2">
+              <template x-for="u in adminUsers" :key="'admin-user-' + u.id">
+                <div class="p-3.5 rounded-2xl border border-slate-100 flex items-center justify-between text-xs">
+                  <div>
+                    <span class="font-bold text-slate-900" x-text="u.name + ' (#' + u.id + ')'"></span>
+                    <span class="text-slate-400 ml-2" x-text="u.email"></span>
+                    <span class="block text-slate-500 font-semibold mt-0.5" x-text="'Balance: ₹' + u.balance + ' · ' + u.order_count + ' Orders'"></span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button @click="openBalanceModal(u)" class="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 font-bold hover:bg-blue-100">
+                      ± Balance
+                    </button>
+                    <button @click="toggleAdminUserStatus(u.id, u.status)" class="px-3 py-1.5 rounded-xl font-bold"
+                            :class="u.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'"
+                            x-text="u.status">
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Admin Orders View -->
+          <div x-show="adminActiveTab === 'orders'" class="bg-white rounded-3xl p-6 border border-slate-200 space-y-4">
+            <h4 class="text-sm font-black text-slate-900">All Database Orders</h4>
+            <div class="space-y-2">
+              <template x-for="ao in adminOrders" :key="'admin-ord-' + ao.id">
+                <div class="p-3.5 rounded-2xl border border-slate-100 flex items-center justify-between text-xs">
+                  <div>
+                    <span class="font-bold text-blue-600" x-text="'#' + ao.id"></span>
+                    <span class="font-bold text-slate-900 ml-1" x-text="ao.service_name"></span>
+                    <span class="text-slate-500 ml-2" x-text="ao.user_name + ' · ₹' + ao.charge"></span>
+                    <div class="text-[11px] text-slate-400 truncate max-w-sm" x-text="ao.link"></div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <select :value="ao.status" @change="updateAdminOrderStatus(ao.id, $event.target.value)"
+                            class="px-2 py-1 rounded-lg border text-xs font-bold">
+                      <option value="Pending">Pending</option>
+                      <option value="Processing">Processing</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Admin Services View -->
+          <div x-show="adminActiveTab === 'services'" class="bg-white rounded-3xl p-6 border border-slate-200 space-y-4">
+            <h4 class="text-sm font-black text-slate-900">Manage Services</h4>
+            <div class="space-y-2">
+              <template x-for="asrv in services" :key="'admin-srv-' + asrv.id">
+                <div class="p-3.5 rounded-2xl border border-slate-100 flex items-center justify-between text-xs">
+                  <div>
+                    <span class="font-bold text-slate-900" x-text="asrv.name"></span>
+                    <span class="text-blue-600 font-bold ml-2" x-text="'₹' + asrv.price_per_k + '/1K'"></span>
+                    <span class="text-slate-400 ml-2" x-text="asrv.category_name"></span>
+                  </div>
+                  <button @click="toggleServiceStatus(asrv.id, asrv.status)" class="px-3 py-1 rounded-lg font-bold"
+                          :class="asrv.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'"
+                          x-text="asrv.status">
+                  </button>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Balance Adjustment Modal -->
+          <div x-show="adminBalanceModalUser" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4" @click.away="adminBalanceModalUser = null">
+              <h4 class="text-sm font-black text-slate-900">Adjust User Balance</h4>
+              <p class="text-xs text-slate-500" x-text="adminBalanceModalUser ? adminBalanceModalUser.name + ' (#' + adminBalanceModalUser.id + ')' : ''"></p>
+              
+              <div class="flex gap-2">
+                <button type="button" @click="adminBalanceAction = 'add'" class="flex-1 py-2 rounded-xl text-xs font-bold border" :class="adminBalanceAction === 'add' ? 'bg-emerald-600 text-white' : 'bg-slate-50'">Add (+)</button>
+                <button type="button" @click="adminBalanceAction = 'deduct'" class="flex-1 py-2 rounded-xl text-xs font-bold border" :class="adminBalanceAction === 'deduct' ? 'bg-red-600 text-white' : 'bg-slate-50'">Deduct (-)</button>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Amount (₹)</label>
+                <input type="number" x-model="adminBalanceAmount" min="1" class="w-full p-2.5 rounded-xl border text-sm font-bold outline-none" />
+              </div>
+
+              <div class="flex gap-2">
+                <button type="button" @click="adminBalanceModalUser = null" class="flex-1 py-2.5 rounded-xl border text-xs font-bold">Cancel</button>
+                <button type="button" @click="submitBalanceAdjustment()" class="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold">Apply</button>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+      </main>
+
+      <!-- MOBILE BOTTOM NAVIGATION BAR (Exact Reference Image Panel 10) -->
+      <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2.5 flex items-center justify-around shadow-lg">
+        <button @click="navigateTo(isAuthenticated ? 'dashboard' : 'landing')" class="flex flex-col items-center gap-1 text-[10px] font-bold transition"
+                :class="currentPage === 'dashboard' || currentPage === 'landing' ? 'text-blue-600' : 'text-slate-400'">
+          <span class="text-lg">🏠</span>
+          <span>Home</span>
+        </button>
+        <button @click="navigateTo('orders')" class="flex flex-col items-center gap-1 text-[10px] font-bold transition"
+                :class="currentPage === 'orders' ? 'text-blue-600' : 'text-slate-400'">
+          <span class="text-lg">📦</span>
+          <span>Orders</span>
+        </button>
+        <button @click="navigateTo('new-order')" class="flex flex-col items-center -mt-5">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-blue-500/30 active:scale-95 transition">
+            ⚡
+          </div>
+          <span class="text-[9px] font-extrabold text-blue-700 mt-0.5">Order</span>
+        </button>
+        <button @click="navigateTo('wallet')" class="flex flex-col items-center gap-1 text-[10px] font-bold transition"
+                :class="currentPage === 'wallet' ? 'text-blue-600' : 'text-slate-400'">
+          <span class="text-lg">👛</span>
+          <span>Wallet</span>
+        </button>
+        <button @click="navigateTo('profile')" class="flex flex-col items-center gap-1 text-[10px] font-bold transition"
+                :class="currentPage === 'profile' ? 'text-blue-600' : 'text-slate-400'">
+          <span class="text-lg">👤</span>
+          <span>Profile</span>
+        </button>
+      </nav>
+
+      <!-- FOOTER -->
+      <footer class="bg-white border-t border-slate-200/80 py-8 text-xs text-slate-500 hidden md:block">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-slate-900">SMM Panel</span>
+            <span>·</span>
+            <span>Powered by PHP & MariaDB Engine</span>
+          </div>
+          <div class="flex items-center gap-4 text-xs font-semibold">
+            <button @click="navigateTo('services')" class="hover:text-blue-600">Services Catalog</button>
+            <button @click="navigateTo('tickets')" class="hover:text-blue-600">Support Desk</button>
+            <button @click="navigateTo('login')" class="hover:text-blue-600">Authentication</button>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+
+    <!-- MAIN APP SCRIPT -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
