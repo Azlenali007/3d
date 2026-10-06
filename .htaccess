@@ -1,0 +1,27 @@
+# Apache .htaccess configuration for SMM Panel
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Route API requests to PHP router
+    RewriteRule ^api/(.*)$ backend/api.php [QSA,L]
+    RewriteRule ^api$ backend/api.php [QSA,L]
+
+    # Prevent direct access to sensitive backend files
+    RewriteRule ^backend/(config|db)\.php$ - [F,L]
+
+    # If the requested file or directory exists, serve directly
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Otherwise send to index.html for frontend routing
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>

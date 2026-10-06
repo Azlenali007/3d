@@ -109,3 +109,17 @@ CREATE TABLE IF NOT EXISTS ticket_messages (
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Notifications Table
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(191) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(32) NOT NULL DEFAULT 'info',
+    is_read BOOLEAN NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX (user_id),
+    INDEX (is_read)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

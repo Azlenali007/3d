@@ -583,6 +583,36 @@ try {
     }
 
     // -------------------------------------------------------------
+    // Notifications Routes
+    // -------------------------------------------------------------
+    if ($path === '/notifications' && $method === 'GET') {
+        $user = requireAuth($pdo);
+        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 50");
+        $stmt->execute([$user['id']]);
+        $notifications = $stmt->fetchAll();
+
+        $unreadCount = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
+        $unreadCount->execute([$user['id']]);
+        $unread = (int)$unreadCount->fetchColumn();
+
+        sendJson(['success' => true, 'notifications' => $notifications, 'unread_count' => $unread]);
+    }
+
+    if ($path === '/notifications/read-all' && $method === 'POST') {
+        $user = requireAuth($pdo);
+        $pdo->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?")->execute([$user['id']]);
+        sendJson(['success' => true, 'message' => 'All notifications marked as read']);
+    }
+
+    if ($path === '/notifications/read' && $method === 'POST') {
+        $user = requireAuth($pdo);
+        $input = getJsonInput();
+        $notifId = (int)($input['id'] ?? 0);
+        $pdo->prepare("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?")->execute([$notifId, $user['id']]);
+        sendJson(['success' => true, 'message' => 'Notification marked as read']);
+    }
+
+    // -------------------------------------------------------------
     // Admin Routes
     // -------------------------------------------------------------
     if ($path === '/admin/stats' && $method === 'GET') {
@@ -718,6 +748,31 @@ try {
 
         $pdo->prepare("UPDATE services SET status = ? WHERE id = ?")->execute([$status, $srvId]);
         sendJson(['success' => true, 'message' => "Service status set to {$status}"]);
+    }
+
+    if ($path === '/admin/transactions' && $method === 'GET') {
+        requireAdmin($pdo);
+        $stmt = $pdo->query("SELECT t.*, u.name as user_name, u.email as user_email 
+                              FROM transactions t 
+                              JOIN users u ON t.user_id = u.id 
+                              ORDER BY t.id DESC LIMIT 200");
+        sendJson(['success' => true, 'transactions' => $stmt->fetchAll()]);
+    }
+
+    if ($path === '/admin/profile' && $method === 'POST') {
+        $admin = requireAdmin($pdo);
+        $input = getJsonInput();
+        $name = trim($input['name'] ?? $admin['name']);
+        $newPass = trim($input['password'] ?? '');
+
+        if (!empty($newPass) && strlen($newPass) >= 6) {
+            $hash = password_hash($newPass, PASSWORD_BCRYPT);
+            $pdo->prepare("UPDATE users SET name = ?, password_hash = ? WHERE id = ?")->execute([$name, $hash, $admin['id']]);
+        } else {
+            $pdo->prepare("UPDATE users SET name = ? WHERE id = ?")->execute([$name, $admin['id']]);
+        }
+
+        sendJson(['success' => true, 'message' => 'Admin profile updated successfully']);
     }
 
     if ($path === '/admin/settings' && $method === 'POST') {

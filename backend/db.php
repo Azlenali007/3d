@@ -157,6 +157,19 @@ function initTablesAndSeed(PDO $pdo) {
         INDEX (ticket_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
+    // 9. Notifications Table
+    $pdo->exec("CREATE TABLE IF NOT EXISTS notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        title VARCHAR(191) NOT NULL,
+        message TEXT NOT NULL,
+        type VARCHAR(32) NOT NULL DEFAULT 'info',
+        is_read BOOLEAN NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX (user_id),
+        INDEX (is_read)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
     // Seed Initial Settings if empty
     $chk = $pdo->query("SELECT COUNT(*) FROM settings")->fetchColumn();
     if ($chk == 0) {
@@ -295,6 +308,13 @@ function initTablesAndSeed(PDO $pdo) {
             (1024, 1024, 'Hello, I submitted order #10254 for Instagram followers earlier today and the counter has not updated yet. Could you check the queue status please?', 0, '2025-05-12 11:20:00'),
             (1023, 1024, 'I was trying to deposit ₹200 and had a connection blip. Need confirmation if the transaction was captured properly.', 0, '2025-05-10 18:15:00'),
             (1023, 1, 'We have verified your transaction id and updated your wallet balance accordingly.', 1, '2025-05-10 18:45:00')
+        ");
+
+        // Seed Sample Notifications
+        $pdo->exec("INSERT INTO notifications (user_id, title, message, type, is_read, created_at) VALUES
+            (1024, 'Deposit Confirmed', 'Your deposit of ₹500 via Razorpay was successfully credited.', 'wallet', 0, '2025-05-12 16:12:00'),
+            (1024, 'Order #10253 Completed', 'Your YouTube Views order of 5,000 has been fulfilled.', 'order', 0, '2025-05-11 18:10:00'),
+            (1024, 'Welcome to SMM Panel', 'Explore 20+ social media growth services at unmatched wholesale rates.', 'system', 1, '2025-05-09 10:00:00')
         ");
     }
 }

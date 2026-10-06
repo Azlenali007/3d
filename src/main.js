@@ -134,10 +134,13 @@ Alpine.data('smmApp', () => ({
   adminStats: null,
   adminUsers: [],
   adminOrders: [],
-  adminActiveTab: 'dashboard', // dashboard, users, orders, services, settings
+  adminTransactions: [],
+  adminActiveTab: 'dashboard', // dashboard, users, orders, services, payments, settings, profile
   adminBalanceModalUser: null,
   adminBalanceAmount: 100,
   adminBalanceAction: 'add',
+  adminProfileForm: { name: 'Admin Director', password: '' },
+  adminSettingsForm: { site_name: 'SMM Panel', site_tagline: 'Grow Your Social Media', currency_symbol: '₹', min_deposit: 10, max_deposit: 100000, maintenance_mode: '0' },
   newServiceForm: {
     category_id: 1,
     name: '',
@@ -151,6 +154,11 @@ Alpine.data('smmApp', () => ({
     cancel: true
   },
 
+  // Notifications State
+  notifications: [],
+  unreadNotificationCount: 0,
+  showNotificationsModal: false,
+
   // Notification Toast
   toast: { show: false, message: '', type: 'success' },
 
@@ -160,6 +168,7 @@ Alpine.data('smmApp', () => ({
     await this.checkAuth();
     await this.fetchCategories();
     await this.fetchServices();
+    await this.fetchNotifications();
 
     // GSAP Floating Ambient Animation for 3D elements
     this.$nextTick(() => {
@@ -184,6 +193,7 @@ Alpine.data('smmApp', () => ({
     if (page === 'orders') this.fetchOrders();
     if (page === 'transactions' || page === 'wallet') this.fetchTransactions();
     if (page === 'tickets') this.fetchTickets();
+    if (page === 'notifications') this.fetchNotifications();
     if (page === 'dashboard' || page === 'profile') this.checkAuth();
     if (page === 'admin') this.fetchAdminData();
     if (page === 'new-order' && !this.selectedService && this.services.length > 0) {
@@ -555,17 +565,79 @@ Alpine.data('smmApp', () => ({
     }
   },
 
+  // Notifications Methods
+  async fetchNotifications() {
+    try {
+      const res = await this.api('/notifications');
+      if (res.success) {
+        this.notifications = res.notifications;
+        this.unreadNotificationCount = res.unread_count;
+      }
+    } catch (e) {}
+  },
+
+  async markNotificationRead(notif) {
+    if (notif.is_read) return;
+    try {
+      await this.api('/notifications/read', { method: 'POST', body: JSON.stringify({ id: notif.id }) });
+      notif.is_read = 1;
+      this.unreadNotificationCount = Math.max(0, this.unreadNotificationCount - 1);
+    } catch (e) {}
+  },
+
+  async markAllNotificationsRead() {
+    try {
+      await this.api('/notifications/read-all', { method: 'POST' });
+      this.notifications.forEach(n => n.is_read = 1);
+      this.unreadNotificationCount = 0;
+      this.showToast('All notifications marked as read');
+    } catch (e) {}
+  },
+
   // Admin Data & Operations
   async fetchAdminData() {
     try {
-      const [statsRes, usersRes, ordersRes] = await Promise.all([
+      const [statsRes, usersRes, ordersRes, txRes] = await Promise.all([
         this.api('/admin/stats'),
         this.api('/admin/users'),
-        this.api('/admin/orders')
+        this.api('/admin/orders'),
+        this.api('/admin/transactions')
       ]);
       if (statsRes.success) this.adminStats = statsRes.stats;
       if (usersRes.success) this.adminUsers = usersRes.users;
       if (ordersRes.success) this.adminOrders = ordersRes.orders;
+      if (txRes.success) this.adminTransactions = txRes.transactions;
+    } catch (err) {
+      this.showToast(err.message, 'error');
+    }
+  },
+
+  async updateAdminProfile() {
+    try {
+      const res = await this.api('/admin/profile', {
+        method: 'POST',
+        body: JSON.stringify(this.adminProfileForm)
+      });
+      if (res.success) {
+        this.showToast('Admin profile updated successfully');
+        this.adminProfileForm.password = '';
+        await this.checkAuth();
+      }
+    } catch (err) {
+      this.showToast(err.message, 'error');
+    }
+  },
+
+  async updateAdminSettings() {
+    try {
+      const res = await this.api('/admin/settings', {
+        method: 'POST',
+        body: JSON.stringify(this.adminSettingsForm)
+      });
+      if (res.success) {
+        this.showToast('System settings updated in MariaDB');
+        await this.fetchSettings();
+      }
     } catch (err) {
       this.showToast(err.message, 'error');
     }
